@@ -1,0 +1,25 @@
+# core
+pandas>=1.5
+numpy>=1.24
+python-dotenv>=0.21
+requests>=2.28
+tqdm>=4.65
+
+# NLP / ML
+scikit-learn>=1.8
+joblib>=1.2
+spacy>=3.5
+dateparser>=1.1
+
+# Slack integration
+slack-sdk>=3.19
+tenacity>=8.2
+
+# optional web (not used for email-only pipeline but useful for tests)
+# fastapi
+# uvicorn
+
+# dev / utils
+pytest>=7.2
+
+openai>=1.0
