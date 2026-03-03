@@ -43,19 +43,34 @@ jobs:
       - name: Validar TYPEFORM_TOKEN
         run: |
           if [ -z "$TYPEFORM_TOKEN" ]; then
-            echo "ERRO: TYPEFORM_TOKEN está vazio!"
-            exit 1
+            echo "ERRO: TYPEFORM_TOKEN está vazio!"; exit 1
           fi
-          echo "Token definido (primeiros 6 chars): ${TYPEFORM_TOKEN:0:6}..."
-          HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+          if [ -z "$TYPEFORM_FORM_ID" ]; then
+            echo "ERRO: TYPEFORM_FORM_ID está vazio!"; exit 1
+          fi
+          echo "Token (primeiros 6 chars): ${TYPEFORM_TOKEN:0:6}..."
+          echo "Form ID: $TYPEFORM_FORM_ID"
+
+          ME=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $TYPEFORM_TOKEN" \
             https://api.typeform.com/me)
-          echo "Resposta da API /me: $HTTP"
-          if [ "$HTTP" != "200" ]; then
-            echo "ERRO: token inválido (HTTP $HTTP). Atualize o secret TYPEFORM_TOKEN."
+          echo "GET /me: $ME"
+
+          FORM=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TYPEFORM_TOKEN" \
+            https://api.typeform.com/forms/$TYPEFORM_FORM_ID)
+          echo "GET /forms/$TYPEFORM_FORM_ID: $FORM"
+
+          RESP=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TYPEFORM_TOKEN" \
+            "https://api.typeform.com/forms/$TYPEFORM_FORM_ID/responses?page_size=1")
+          echo "GET /forms/$TYPEFORM_FORM_ID/responses: $RESP"
+
+          if [ "$RESP" != "200" ]; then
+            echo "ERRO: não foi possível acessar as respostas (HTTP $RESP)."
             exit 1
           fi
-          echo "Token válido."
+          echo "Acesso às respostas OK."
 
       - name: 1. Ingestão Typeform
         run: python src/form_ingest.py
