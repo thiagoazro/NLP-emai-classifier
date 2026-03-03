@@ -1,0 +1,65 @@
+name: Daily Pipeline
+
+"on":
+  schedule:
+    - cron: "0 8 * * *"   # todo dia às 08:00 UTC
+  workflow_dispatch:       # permite rodar manualmente pelo GitHub
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    env:
+      TYPEFORM_TOKEN:     ${{ secrets.TYPEFORM_TOKEN }}
+      TYPEFORM_FORM_ID:   ${{ secrets.TYPEFORM_FORM_ID }}
+      FIELD_NOME:         ${{ secrets.FIELD_NOME }}
+      FIELD_EMAIL:        ${{ secrets.FIELD_EMAIL }}
+      FIELD_ASSUNTO:      ${{ secrets.FIELD_ASSUNTO }}
+      FIELD_MENSAGEM:     ${{ secrets.FIELD_MENSAGEM }}
+      OPENAI_API_KEY:     ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL:       ${{ secrets.OPENAI_MODEL }}
+      SLACK_BOT_TOKEN:    ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID:   ${{ secrets.SLACK_CHANNEL_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download spaCy model
+        run: python -m spacy download pt_core_news_sm
+
+      - name: Create data directories
+        run: mkdir -p data/staging/email models
+
+      - name: 1. Ingestão Typeform
+        run: python src/form_ingest.py
+
+      - name: 2. Merge mensagens
+        run: python src/merge_messages.py
+
+      - name: 3. Limpeza e anotação
+        run: PYTHONPATH=src python src/clean_and_annotate.py
+
+      - name: 4. Treinamento do modelo de sentimento
+        run: python src/train_sentiment.py --data data/unified_clean.csv --out models/sentiment.joblib
+
+      - name: 5. Predição de sentimento
+        run: PYTHONPATH=src python src/predict.py
+
+      - name: 6. Pós-processamento e prioridade
+        run: python src/postprocessing.py
+
+      - name: 7. Geração de respostas LLM
+        run: python src/llm_generate_replies.py
+
+      - name: 8. Envio ao Slack
+        run: python src/send_to_slack_bot.py
