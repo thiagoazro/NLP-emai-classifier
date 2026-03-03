@@ -40,6 +40,23 @@ jobs:
       - name: Create data directories
         run: mkdir -p data/staging/email models
 
+      - name: Validar TYPEFORM_TOKEN
+        run: |
+          if [ -z "$TYPEFORM_TOKEN" ]; then
+            echo "ERRO: TYPEFORM_TOKEN está vazio!"
+            exit 1
+          fi
+          echo "Token definido (primeiros 6 chars): ${TYPEFORM_TOKEN:0:6}..."
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TYPEFORM_TOKEN" \
+            https://api.typeform.com/me)
+          echo "Resposta da API /me: $HTTP"
+          if [ "$HTTP" != "200" ]; then
+            echo "ERRO: token inválido (HTTP $HTTP). Atualize o secret TYPEFORM_TOKEN."
+            exit 1
+          fi
+          echo "Token válido."
+
       - name: 1. Ingestão Typeform
         run: python src/form_ingest.py
 
