@@ -3,3 +3,8 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# dados gerados em runtime — não commitar
+data/staging/
+data/*.csv
+models/

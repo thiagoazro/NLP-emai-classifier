@@ -107,6 +107,12 @@ def fetch_responses(after_token: str = None, page_size: int = 100) -> dict:
         params=params,
         timeout=30,
     )
+    if resp.status_code == 401:
+        raise RuntimeError(
+            "TYPEFORM_TOKEN inválido ou expirado (401). "
+            "Gere um novo token em https://admin.typeform.com/account#/section/tokens "
+            "e atualize o secret TYPEFORM_TOKEN no repositório."
+        )
     resp.raise_for_status()
     return resp.json()
 
